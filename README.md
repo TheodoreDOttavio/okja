@@ -23,17 +23,18 @@ terrainMap is an array the same size as elevationMap, except the values indicate
 * 4: Thick vegitation, Trees.
 * 5: Big rocks
 
+
 - Movement from x=0, y=0 to x=1, y=0 takes one unit of time.
 - Movement from elevation 1 to 2 takes one unit of time.
 - Okja climb or jump 4 units, not 5 or more unless there is water
 - Okja will jump over a waterfall when Mija wants fish stew for dinner
---  Ignore elevation when moving into terrain 0
+    - Ignore elevation when moving into terrain 0
 - Okja cannot jump out of deep water.
---  Must have matching elevation to move out of terrain 0
+    - Must have matching elevation to move out of terrain 0
 
 - Evaluate movement times to one decimal: 0.0
 - Diagnol and vertical changes are evaluated to one decimal place
---  From [0,0], elevation=1, terrain=1
---  to [1,1], elevation=1, terrain=1
---  takes 1.5 units of time
---    diagnol move is ((1^2)+(1^2))^0.5 = 1.4 + elevation (1-1) = 0 + terrain = 0.1.
+    - From [0,0], elevation=1, terrain=1
+    - to [1,1], elevation=1, terrain=1
+    - takes 1.5 units of time
+    - diagnol move is ((1^2)+(1^2))^0.5 = 1.4 + elevation (1-1) = 0 + terrain = 0.1.
