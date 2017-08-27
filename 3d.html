@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="utf-8"/>
+  <title>Okja! Kata function 3d viewer</title>
+  <!--- link to Your kata--->
+  <script src="_kata_okja.js"></script>
+  <!--- link to jquery --->
+  <script src="jquery-3.2.1.slim.min.js"></script>
+  <script src="jquery-ui.min.js"></script>
+  <!--- link to the last version of babylon --->
+  <script src="babylon.js"></script>
+
+  <script>
+  var materialNames = ["deepWater",
+    "dirt","lightBushes","shallowWater",
+    "trees","bigRocks",
+    "startNode", "endNode","path"];
+  var materialColors = [[0,0,0.3],
+    [0.6,0.4,0],[0,0.9,0],[0,0,0.9],
+    [0,0.3,0],[0.8,0.8,0.8],
+    [0,1,0],[1,0,0],[0,0,0]];
+
+   //display data
+  function buildit(terrainMap,elevationMap,path) {
+    var startx = path[0][0];
+    var starty = path[0][1];
+    var goalx = path[path.length-1][0];
+    var goaly = path[path.length-1][1];
+
+    //  show array datum as a block of numbers
+    var environmentmaptext = "Elevation Map<br>";
+    var terrainmaptext = "Terrain Map<br>";
+    var keytext = "Terrain Values<br>";
+    var startGoalText = "";
+    for (var y = 0; y < elevationMap.length; y++) {
+     for (var x = 0; x < elevationMap[y].length; x++){
+       environmentmaptext += elevationMap[y][x] + " ";
+       terrainmaptext += terrainMap[y][x] + " ";
+     }
+     environmentmaptext += "<br>";
+     terrainmaptext += "<br>";
+    }
+    for (var x=0; x < materialNames.length-3; x++){
+     keytext += x + " <span style='color:rgb(" + materialColors[x][0]*100 + "%," + materialColors[x][1]*100 + "%," + materialColors[x][2]*100 + "%);'>" + materialNames[x] + "</span><br>";
+    }
+
+    $("#environmentmap").html(environmentmaptext);
+    $("#terrainmap").html(terrainmaptext);
+    $("#mapkey").html(keytext);
+
+    // get the canvas DOM element
+    var canvas = document.getElementById('renderCanvas');
+
+    // load the 3D engine
+    var engine = new BABYLON.Engine(canvas, true);
+
+    // createScene function that creates and return the scene
+    var createScene = function(){
+      var scene = new BABYLON.Scene(engine); // create a basic BJS Scene object
+      var camera = new BABYLON.ArcRotateCamera("Camera", Math.PI * 4, Math.PI / 4, 18, new BABYLON.Vector3(elevationMap[0].length/2,7,elevationMap.length/2), scene);
+      camera.attachControl(canvas, true);
+
+      // create a basic light, aiming 0,1,0 - meaning, to the sky
+      var light = new BABYLON.HemisphericLight('light1', new BABYLON.Vector3(0,1,0), scene);
+
+      // Create textures
+      var materials = [];
+      var nextMaterial = new BABYLON.StandardMaterial("nothing", scene);
+
+      for (var x = 0; x < materialNames.length; x++){
+        nextMaterial = new BABYLON.StandardMaterial(materialNames[x], scene);
+        nextMaterial.diffuseColor = new BABYLON.Color3(materialColors[x][0], materialColors[x][1], materialColors[x][2]);
+        materials.push(nextMaterial);
+      }
+
+      //materialWireframe.wireframe = true;
+      var nodecount = 0;
+      var node = {};
+
+      for (var y = 0; y < elevationMap.length; y++) {
+        for (var x = 0; x < elevationMap[y].length; x++){
+          nodecount++;
+          var colheight = (elevationMap[y][x]+1)/2;
+          node.nodecount = BABYLON.Mesh.CreateCylinder("mapnode", colheight, 1.4, 1.4, 4, 1, scene, false);
+          node.nodecount.rotation.y = Math.PI / 4;//(Math.PI / 6);
+          node.nodecount.position.x = y;
+          node.nodecount.position.z = x;
+          node.nodecount.position.y = colheight/2;
+          node.nodecount.material = materials[terrainMap[y][x]];
+          if (x == startx && y == starty) {
+            node["start"] = BABYLON.Mesh.CreateSphere("start", 16, 0.75, scene);
+            node["start"].position.x = y;
+            node["start"].position.z = x;
+            node["start"].position.y = colheight;
+            node["start"].material = materials[6];
+          }
+          if (x == goalx && y == goaly) {
+            node["goal"] = BABYLON.Mesh.CreateSphere("start", 16, 0.75, scene);
+            node["goal"].position.x = y;
+            node["goal"].position.z = x;
+            node["goal"].position.y = colheight;
+            node["goal"].material = materials[7];
+          }
+        }
+      }
+      for (var i = 0; i < path.length; i++){
+        node["path"+i] = BABYLON.Mesh.CreateSphere("path"+i, 8, 0.25, scene);
+        var colheight = (elevationMap[path[i][1]][path[i][0]]/2)+0.75;
+        // node["path"+i].position.Vector3(path[i][1],path[i][0],colheight);
+        node["path"+i].position.x = path[i][1];
+        node["path"+i].position.z = path[i][0];
+        node["path"+i].position.y = colheight;
+        node["path"+i].material = materials[8];
+      }
+
+      // create a built-in "ground" shape; its constructor takes the same 5 params as the sphere's one
+      //var ground = BABYLON.Mesh.CreateGround('ground1', elevationMap[0].length, elevationMap.length, 2, scene);
+
+      // return the created scene
+      return scene;
+    }
+
+    // call the createScene function
+    var scene = createScene();
+
+    // run the render loop
+    engine.runRenderLoop(function(){
+        scene.render();
+    });
+
+    // the canvas/window resize event handler
+    window.addEventListener('resize', function(){
+        engine.resize();
+    });
+  }
+
+
+  //Create 3d display window
+    window.addEventListener('DOMContentLoaded', function(){
+      $("#test_TinyMap").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Simple Path");
+        $("#testDescription").html("Simple three point path. The minimum.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 2, 2, 2],
+          [ 2, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 0, 0, 2, 0);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test_TinyMapDiagnol").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Diagnol Path");
+        $("#testDescription").html("Simple three point diagnol path");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
+        var terrainMap = [
+          [ 4, 4, 4],
+          [ 4, 4, 4],
+          [ 4, 4, 4]
+        ];
+        path = runOkja(elevationMap, terrainMap, 0, 0, 2, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test_TinyMapPit").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Elevation Test");
+        $("#testDescription").html("Path around an elevation change.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [1, 1, 1],
+          [1, 0, 1],
+          [1, 1, 1]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 2, 2, 2],
+          [ 2, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 0, 0, 2, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test_TinyMapTree").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Terrain Test");
+        $("#testDescription").html("Path around a terrain change.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [0, 0, 0]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 2, 4, 2],
+          [ 2, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 0, 0, 2, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test_TinyMapTreeHill").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Terrain and Elevation Test");
+        $("#testDescription").html("Path must go around the hill through light vegetation.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [1, 1, 1],
+          [1, 2, 1],
+          [1, 1, 1]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 4, 2, 2],
+          [ 2, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 1, 0, 1, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+      $("#test_TinyMapTreeClearHill").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Terrain versus Elevation Test");
+        $("#testDescription").html("Path must go over the hill because the terrain is clear.<br>The two diagnol movements cost more than the terrain change.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [1, 1, 1],
+          [1, 2, 1],
+          [1, 1, 1]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 4, 1, 2],
+          [ 2, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 1, 0, 1, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test_TinyMapRiver").on('click', function ()
+      {
+        $("#testTitle").html("Tiny Map - Terrain and Elevation Test");
+        $("#testDescription").html("Path must go through flat ground instead of light vegetaion.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [1, 1, 1],
+          [1, 2, 1],
+          [1, 1, 1]
+        ];
+        var terrainMap = [
+          [ 2, 2, 2],
+          [ 2, 2, 1],
+          [ 0, 0, 0]
+        ];
+        path = runOkja(elevationMap, terrainMap, 1, 0, 1, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+
+      $("#test1").on('click', function ()
+      {
+        $("#testTitle").html("Test Running around a cliff");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [ 3, 2, 1, 0, 0],
+          [ 4, 5, 0, 0, 0],
+          [ 5, 6, 0, 0, 0],
+          [ 5, 7, 0, 0, 0],
+          [ 5, 5, 0, 0, 0],
+        ];
+        var terrainMap = [
+          [ 2, 2, 1, 0, 2],
+          [ 2, 2, 0, 2, 5],
+          [ 2, 1, 0, 8, 5],
+          [ 4, 1, 0, 2, 5],
+          [ 2, 4, 0, 2, 2],
+        ];
+        path = runOkja(elevationMap, terrainMap, 2, 4, 1, 4);
+        buildit(terrainMap,elevationMap,path);
+      });
+      $('#test2').on('click', function ()
+        {
+          $("#testTitle").html("Test Running down the Mountain");
+          $("#testDescription").html("<canvas id=\"renderCanvas\"></canvas>");
+          var elevationMap = [
+            [ 6, 6, 6, 5, 5, 5, 5, 5, 4, 4, 5],
+            [ 6, 6, 7, 6, 5, 5, 4, 5, 4, 4, 6],
+            [ 6, 7, 8, 8, 6, 6, 4, 4, 4, 6, 5],
+            [ 6, 7, 9, 7, 6, 5, 4, 4, 6, 6, 7],
+            [ 5, 7, 9, 7, 6, 5, 4, 0, 6, 6, 7],
+            [ 5, 6, 7, 6, 5, 5, 3, 0, 5, 6, 6],
+            [ 5, 6, 6, 5, 5, 5, 3, 0, 0, 0, 0],
+            [ 4, 5, 5, 4, 4, 4, 2, 0, 0, 0, 0],
+            [ 1, 2, 2, 1, 0, 2, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+          ];
+          var terrainMap = [
+            [ 0, 2, 2, 5, 8, 5, 2, 2, 9, 9, 5],
+            [ 0, 2, 5, 1, 8, 2, 3, 2, 9, 9, 5],
+            [ 2, 5, 4, 4, 7, 4, 3, 6, 6, 5, 5],
+            [ 5, 5, 4, 4, 7, 4, 3, 6, 7, 0, 0],
+            [ 5, 5, 4, 2, 2, 4, 7, 9, 7, 0, 0],
+            [ 0, 0, 0, 2, 0, 0, 4, 9, 7, 0, 0],
+            [ 0, 0, 0, 0, 0, 0, 2, 6, 3, 5, 2],
+            [ 0, 0, 0, 0, 0, 0, 2, 6, 3, 2, 2],
+            [ 0, 0, 0, 0, 0, 2, 3, 6, 3, 2, 2],
+            [ 0, 0, 0, 0, 0, 2, 3, 6, 3, 2, 2],
+            [ 0, 0, 0, 0, 0, 2, 3, 3, 3, 2, 2]
+          ];
+          path = runOkja(elevationMap, terrainMap, 1, 3, 7, 7);
+          buildit(terrainMap,elevationMap,path);
+        });
+
+    });
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Nova+Mono|Poppins:500');
+    html, body {
+      overflow: hidden;
+      width:100%;
+      height 100%;
+      background:#cccef4;
+      font-family:'Poppins', Arial, sans-serif;
+      font-size:1em;
+      margin:0;
+      padding:0;
+      color:#112211;
+    }
+    a {
+      color:#000000;
+      text-decoration:none;
+    }
+    a:hover { text-decoration: underline;}
+
+    #wrap {
+      width    : 80%;
+      margin   : 10px auto;
+    }
+    #content {
+      border-width: 1px;
+      border-color: #ffffff;
+      border-style: solid;
+      border-radius: 10px;
+      background: #b1b3d4;
+      align-content: center;
+      min-height: 460px;
+      font-weight: 100;
+      font-size: 16px;
+      text-align: left;
+      color: #333333;
+      box-sizing: content-box;
+      -moz-box-sizing: content-box;
+      -webkit-box-sizing: content-box;
+    }
+    #content table {
+      width: 90%;
+      font-weight: 100;
+      font-size: 12px;
+      margin-right  : 5%;
+      margin-left   : 5%;
+    }
+    .title {
+      margin: 3px;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 100;
+    }
+    .description {
+      padding:2px 20px 2px 20px;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .button {
+      height:35px;
+      border-radius:20px;
+      background: #eeeeee;
+      padding:3px 10px 3px 10px;
+      font-size: 11px;
+      cursor:pointer;
+    }
+    .data {
+      font-family: 'Nova Mono', monospace;
+      font-size: 11px;
+      padding:1px;
+    }
+    #renderCanvas {
+      width: 90%;
+      height: 90%;
+      margin: 0 5% 1% 5%;
+      touch-action: none;
+    }
+  </style>
+
+</head>
+<body>
+  <div id="wrap">
+    <div id="content">
+      <div class="title" id="testTitle">Select a Test</div>
+      <div class="description">
+        <span class="button" id="test_TinyMap">Tiny Map</span>
+        <span class="button" id="test_TinyMapDiagnol">Tiny Map 2</span>
+        <span class="button" id="test_TinyMapPit">Tiny Map Pit</span>
+        <span class="button" id="test_TinyMapTree">Tiny Map Tree</span>
+        <span class="button" id="test_TinyMapTreeHill">Tiny Map Trees on a hill</span>
+        <span class="button" id="test_TinyMapTreeClearHill">Tiny Map Trees vs a clear hill</span>
+      </div>
+      <div class="description">
+        <span class="button" id="test_TinyMapRiver">Tiny Map River</span>
+      </div>
+      <div class="description">
+        <span class="button" id="test1">Map</span>
+      </div>
+
+      <div class="description" id="testDescription">
+      Movement from x=0, y=0 to x=1, y=0 takes one unit of time.
+      <br>Movement from elevation value of 1 to 2 takes one unit of time.
+      <br>Okja climb or jump 4 units, not 5 or more unless there is water
+      <br>&nbsp;
+      <br>Okja will jump over a waterfall when Mija wants fish stew for dinner
+      <br>&nbsp;Ignore elevation when moving into terrain 0
+      <br>Okja cannot jump out of deep water.
+      <br>&nbsp;Must have matching elevation to move out of terrain 0
+      <br>&nbsp;
+      <br>Evaluate movement times to one decimal: 0.0
+      <br>Diagnol and vertical changes are evaluated to one decimal place
+      <br>&nbsp;From [0,0], elevation=1, terrain=1
+      <br>&nbsp;to [1,1], elevation=1, terrain=1
+      <br>&nbsp;takes 1.5 units of time
+      <br>&nbsp;diagnol move is ((1^2)+(1^2))^0.5 = 1.4 + elevation (1-1) = 0 + terrain = 0.1.</div>
+
+      <div class="show3d" id="show3d"></div>
+
+      <table><tr>
+        <td class="data" id="mapkey"></td>
+        <td class="data" id="environmentmap"></td>
+        <td class="data" id="terrainmap"></td>
+      </tr></table>
+
+    </div>
+  </div>
+</body>
+</html>
