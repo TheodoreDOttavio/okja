@@ -49,13 +49,14 @@ function MapObj(elevationmap, terrainmap){
     var elevationCost = this.elevationmap[y][x] - this.elevationmap[fromy][fromx];
     if (elevationCost < 0) {elevationCost *= -1};
 
-    if (this.terrainmap[y][x] == 0){
-      //this is deep water Jumping down into it is fine climbing out... not so much
-      if (elevationCost < 0){ return -1; }
-    }else if (elevationCost > 4){
-      //everything outside of deep water, an elevation change of 4 or more is too steep.
-      return -1;
-    }
+    //exiting deepwater (from swimming)
+    if (this.terrainmap[fromy][fromx] == 0 && this.terrainmap[y][x] != 0 && elevationCost != 0){return -1;}
+
+    //this is deep water Jumping down into it is fun!
+    if (this.terrainmap[y][x] == 0){elevationCost = 0;}
+
+    //everything outside of deep water, an elevation change of 4 or more is too steep.
+    if (elevationCost > 4){return -1;}
 
     return this.terrainmap[y][x] + elevationCost;
   }

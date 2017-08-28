@@ -81,7 +81,7 @@
       for (var y = 0; y < elevationMap.length; y++) {
         for (var x = 0; x < elevationMap[y].length; x++){
           nodecount++;
-          var colheight = (elevationMap[y][x]+1)/2;
+          var colheight = (elevationMap[y][x]+1)/4;
           node.nodecount = BABYLON.Mesh.CreateCylinder("mapnode", colheight, 1.4, 1.4, 4, 1, scene, false);
           node.nodecount.rotation.y = Math.PI / 4;//(Math.PI / 6);
           node.nodecount.position.x = y;
@@ -106,7 +106,7 @@
       }
       for (var i = 0; i < path.length; i++){
         node["path"+i] = BABYLON.Mesh.CreateSphere("path"+i, 8, 0.25, scene);
-        var colheight = (elevationMap[path[i][1]][path[i][0]]/2)+0.75;
+        var colheight = (elevationMap[path[i][1]][path[i][0]]/4)+0.4;
         // node["path"+i].position.Vector3(path[i][1],path[i][0],colheight);
         node["path"+i].position.x = path[i][1];
         node["path"+i].position.z = path[i][0];
@@ -253,26 +253,45 @@
 
       $("#test_TinyMapRiver").on('click', function ()
       {
-        $("#testTitle").html("Tiny Map - Terrain and Elevation Test");
-        $("#testDescription").html("Path must go through flat ground instead of light vegetaion.");
+        $("#testTitle").html("River on a plain");
+        $("#testDescription").html("Path enters water on first move, and stays in water until there is a way out with no elevation change.");
         $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
         var elevationMap = [
-          [1, 1, 1],
-          [1, 2, 1],
-          [1, 1, 1]
+          [1, 1, 1, 1, 1, 1, 1, 1],
+          [0, 0, 0, 0, 0, 0, 0, 0],
+          [1, 1, 1, 1, 1, 1, 1, 0]
         ];
         var terrainMap = [
-          [ 2, 2, 2],
-          [ 2, 2, 1],
-          [ 0, 0, 0]
+          [2, 2, 2, 2, 2, 2, 2, 2],
+          [0, 0, 0, 0, 0, 0, 0, 0],
+          [2, 2, 2, 2, 2, 2, 2, 2]
         ];
-        path = runOkja(elevationMap, terrainMap, 1, 0, 1, 2);
+        path = runOkja(elevationMap, terrainMap, 0, 0, 5, 2);
+        buildit(terrainMap,elevationMap,path);
+      });
+      $("#test_TinyMapWaterfall").on('click', function ()
+      {
+        $("#testTitle").html("Waterfall");
+        $("#testDescription").html("The only way over the cliff is down the waterfall, Must exit through shallow water.");
+        $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
+        var elevationMap = [
+          [8, 7, 6, 6, 6, 7, 8, 9],
+          [2, 1, 1, 0, 0, 1, 2, 2],
+          [1, 1, 1, 0, 0, 0, 1, 1]
+        ];
+        var terrainMap = [
+          [2, 2, 2, 0, 1, 2, 2, 2],
+          [4, 2, 2, 0, 0, 2, 2, 2],
+          [4, 4, 2, 0, 0, 3, 2, 2]
+        ];
+        path = runOkja(elevationMap, terrainMap, 0, 0, 7, 1);
         buildit(terrainMap,elevationMap,path);
       });
 
-      $("#test1").on('click', function ()
+      $("#test_Upacliff").on('click', function ()
       {
         $("#testTitle").html("Test Running around a cliff");
+        $("#testDescription").html("Path must go around cliff, and over cleared peak.");
         $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
         var elevationMap = [
           [ 3, 2, 1, 0, 0],
@@ -291,10 +310,11 @@
         path = runOkja(elevationMap, terrainMap, 2, 4, 1, 4);
         buildit(terrainMap,elevationMap,path);
       });
-      $('#test2').on('click', function ()
+      $('#test_MedMap').on('click', function ()
         {
           $("#testTitle").html("Test Running down the Mountain");
-          $("#testDescription").html("<canvas id=\"renderCanvas\"></canvas>");
+          $("#testDescription").html("Loading a larger map...");
+          $("#show3d").html("<canvas id=\"renderCanvas\"></canvas>");
           var elevationMap = [
             [ 6, 6, 6, 5, 5, 5, 5, 5, 4, 4, 5],
             [ 6, 6, 7, 6, 5, 5, 4, 5, 4, 4, 6],
@@ -422,9 +442,11 @@
       </div>
       <div class="description">
         <span class="button" id="test_TinyMapRiver">Tiny Map River</span>
+        <span class="button" id="test_TinyMapWaterfall">Tiny Map Waterfall</span>
       </div>
       <div class="description">
-        <span class="button" id="test1">Map</span>
+        <span class="button" id="test_Upacliff">Run around a cliff</span>
+        <span class="button" id="test_MedMap">Medium sized map</span>
       </div>
 
       <div class="description" id="testDescription">
